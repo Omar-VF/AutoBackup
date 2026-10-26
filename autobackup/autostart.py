@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-REG_APP_NAME = "ShopAutoBackupPro"
+REG_APP_NAME = "Tethr"
 REG_SUBKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 
@@ -54,3 +54,7 @@ def set_autostart(enable: bool) -> bool:
     except Exception as e:
         print(f"Failed to set Windows autostart: {e}")
         return False
+
+
+# Compatibility alias
+set_run_on_startup = set_autostart

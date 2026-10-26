@@ -13,7 +13,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "end_time": "21:00",
     "active_days": [0, 1, 2, 3, 4, 5],  # 0=Monday, 6=Sunday. Default: Mon-Sat
     "retention_days": 30,
-    "backup_prefix": "BillingBackup",
+    "backup_prefix": "TethrBackup",
     "sound_alerts": True,
     "desktop_notifications": True,
     "run_on_startup": False,
@@ -38,7 +38,7 @@ class ConfigManager:
                         json.dump(DEFAULT_CONFIG, f, indent=4)
                 self.config_path = local_path
             except (PermissionError, OSError):
-                app_data = Path(os.getenv("APPDATA", ".")) / "ShopAutoBackup"
+                app_data = Path(os.getenv("APPDATA", ".")) / "Tethr"
                 app_data.mkdir(parents=True, exist_ok=True)
                 self.config_path = app_data / "config.json"
 

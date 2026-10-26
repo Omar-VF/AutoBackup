@@ -20,7 +20,7 @@ class BackupLogger:
         self.history_file = self.data_dir / "history.json"
 
         # Setup standard logger
-        self.logger = logging.getLogger("ShopAutoBackup")
+        self.logger = logging.getLogger("Tethr")
         self.logger.setLevel(logging.INFO)
         if not self.logger.handlers:
             formatter = logging.Formatter(

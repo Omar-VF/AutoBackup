@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
@@ -24,7 +25,7 @@ def check_single_instance() -> bool:
         import ctypes
         ERROR_ALREADY_EXISTS = 183
         kernel32 = ctypes.windll.kernel32
-        MUTEX_HANDLE = kernel32.CreateMutexW(None, False, "ShopAutoBackupPro_Named_Mutex_v1")
+        MUTEX_HANDLE = kernel32.CreateMutexW(None, False, "Tethr_Named_Mutex_v1")
         if kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
             return False
         return True
@@ -37,27 +38,34 @@ def main():
     if sys.platform == "win32":
         try:
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("OmarVF.ShopAutoBackupPro.App.1.0")
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("OmarVF.Tethr.App.1.0")
         except Exception:
             pass
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Shop AutoBackup Pro")
-    app.setOrganizationName("AutoBackup")
+    app.setApplicationName("Tethr")
+    app.setOrganizationName("Tethr")
     app.setQuitOnLastWindowClosed(False)
 
     # Single-instance enforcement
     if not check_single_instance():
-        print("Shop AutoBackup Pro is already running in your Windows System Tray.")
-        # If user opened from shortcut, bring up message box
+        print("Tethr is already running in your Windows System Tray.")
         QMessageBox.information(
             None,
             "Already Running",
-            "AutoBackup is already running. Check your Windows System Tray (near the clock).",
+            "Tethr is already running. Check your Windows System Tray (near the clock).",
         )
         sys.exit(0)
 
-    # Apply modern minimalist dark theme
+    # Load custom fonts
+    from PyQt6.QtGui import QFontDatabase, QFont
+    fonts_dir = Path(__file__).resolve().parent / "assets" / "fonts"
+    if fonts_dir.exists():
+        QFontDatabase.addApplicationFont(str(fonts_dir / "InstrumentSerif-Regular.ttf"))
+        QFontDatabase.addApplicationFont(str(fonts_dir / "Manrope-Variable.ttf"))
+    app.setFont(QFont("Manrope", 13))
+
+    # Apply modern custom stylesheet
     app.setStyleSheet(MODERN_DARK_STYLE)
 
     # Core subsystems
@@ -75,7 +83,7 @@ def main():
         window.raise_()
         window.activateWindow()
     else:
-        tray.notify("AutoBackup Active", "Running quietly in the system tray.")
+        tray.notify("Tethr Active", "Running quietly in the system tray.")
 
     exit_code = app.exec()
     sys.exit(exit_code)

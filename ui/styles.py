@@ -1,328 +1,428 @@
 """
-Lavish, spacious editorial luxury stylesheet for Shop AutoBackup Pro.
-Primary Dominant Color: #FDFBD4 (Warm Cream / Linen Canvas)
-Typography & Accents:
-- #38240D (Deep Espresso)
-- #713600 (Saddle Brown)
-- #C05800 (Burnt Amber / Terracotta)
+Tethr Luxury Editorial Design Stylesheet.
+Exactly matches the design specifications from design/Tethr Redesign.html & design/Tethr Redesign.pdf.
+
+Colors:
+- Canvas: #FCF7DE
+- Deep Espresso: #2E1A08
+- Surface Cards: #F3EBC4
+- Badges: #E8DBA6
+- Secondary Buttons / Chips: #EFE4B8
+- Primary CTA / Active Indicators: #B85400
+- Source/Dest Tags: #8F4300
+- Eyebrow Tag: #F7BE72
+- Muted Labels: #6B4E31
+- Inactive summary pills: #E4D8A3 (text: #5E4426)
 """
 
-MODERN_DARK_STYLE = """
+TETHR_DESIGN_STYLE = """
 /* ================= GLOBAL BASE ================= */
 QWidget {
-    background-color: #FDFBD4;
-    color: #38240D;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
+    background-color: #FCF7DE;
+    color: #2E1A08;
+    font-family: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 13px;
-    selection-background-color: #C05800;
-    selection-color: #FDFBD4;
+    selection-background-color: #B85400;
+    selection-color: #FFF8E6;
 }
 
 QMainWindow, QDialog {
-    background-color: #FDFBD4;
+    background-color: #FCF7DE;
 }
 
 /* ================= CARDS & CONTAINERS ================= */
 QFrame[card="hero"] {
-    background-color: #FDFBD4;
-    border: 2px solid #C05800;
-    border-radius: 14px;
+    background-color: #2E1A08;
+    border: none;
+    border-radius: 12px;
 }
 
 QFrame[card="surface"] {
-    background-color: #FDFBD4;
-    border: 1.5px solid rgba(113, 54, 0, 0.35);
-    border-radius: 14px;
-}
-
-QFrame[card="surface"]:hover {
-    border: 1.5px solid #C05800;
+    background-color: #F3EBC4;
+    border: none;
+    border-radius: 12px;
 }
 
 QFrame[card="modal"] {
-    background-color: #FDFBD4;
-    border: 2px solid #C05800;
-    border-radius: 16px;
-}
-
-QFrame[separator="true"] {
-    background-color: rgba(113, 54, 0, 0.22);
+    background-color: #FCF7DE;
     border: none;
-    max-height: 1px;
+    border-radius: 14px;
 }
 
 /* In-Window Scrim Dimmer */
 QWidget[role="scrim"] {
-    background-color: rgba(56, 36, 13, 0.50);
+    background-color: rgba(46, 26, 8, 0.58);
 }
 
 /* ================= TYPOGRAPHY ================= */
 QLabel {
     background: transparent;
-    color: #38240D;
+    color: #2E1A08;
 }
 
+/* App Header Title */
 QLabel[role="app_title"] {
-    font-size: 17px;
-    font-weight: 700;
-    color: #38240D;
-    letter-spacing: -0.2px;
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: #2E1A08;
+    letter-spacing: -0.01em;
+}
+
+/* Hero Section Typography */
+QLabel[role="hero_tag"] {
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: #F7BE72;
 }
 
 QLabel[role="hero_title"] {
-    font-size: 21px;
-    font-weight: 700;
-    color: #38240D;
-    letter-spacing: -0.3px;
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: 46px;
+    font-weight: 400;
+    color: #FCF7DE;
+    letter-spacing: -0.02em;
 }
 
 QLabel[role="hero_subtitle"] {
-    font-size: 13px;
-    color: #713600;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.55;
+    color: #D9C9A6;
 }
 
-QLabel[role="section_tag"] {
+QLabel[role="hero_note"] {
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #C9B791;
+}
+
+/* Surface Card Typography */
+QLabel[role="card_tag"] {
+    font-family: "Manrope", system-ui, sans-serif;
     font-size: 11px;
-    font-weight: 700;
-    color: #C05800;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #8F4300;
 }
 
-QLabel[role="path_value"] {
+QLabel[role="card_title"] {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: #2E1A08;
+}
+
+QLabel[role="card_status"] {
+    font-family: "Manrope", system-ui, sans-serif;
     font-size: 14px;
-    font-weight: 600;
-    color: #38240D;
+    font-weight: 500;
+    color: #6B4E31;
 }
 
-QLabel[role="muted"] {
+/* Schedule Summary Typography */
+QLabel[role="summary_tag"] {
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #6B4E31;
+}
+
+QLabel[role="summary_val"] {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: #2E1A08;
+}
+
+/* Footer Typography */
+QLabel[role="footer_text"] {
+    font-family: "Manrope", system-ui, sans-serif;
     font-size: 13px;
-    color: #713600;
+    font-weight: 500;
+    color: #6B4E31;
 }
 
-/* ================= STATUS PILLS ================= */
-QLabel[pill="active"] {
-    background-color: rgba(192, 88, 0, 0.12);
-    color: #C05800;
-    border: 1.5px solid #C05800;
-    border-radius: 12px;
-    padding: 4px 12px;
+/* Modal Typography */
+QLabel[role="modal_title"] {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: 44px;
+    font-weight: 400;
+    color: #2E1A08;
+    letter-spacing: -0.02em;
+}
+
+QLabel[role="modal_subtitle"] {
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6B4E31;
+}
+
+QLabel[role="section_label"] {
+    font-family: "Manrope", system-ui, sans-serif;
     font-size: 11px;
-    font-weight: 700;
-    qproperty-alignment: 'AlignCenter';
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #A04800;
 }
 
-QLabel[pill="paused"] {
-    background-color: rgba(113, 54, 0, 0.12);
-    color: #713600;
-    border: 1.5px solid #713600;
-    border-radius: 12px;
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 700;
-    qproperty-alignment: 'AlignCenter';
+QLabel[role="field_note"] {
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6B4E31;
 }
 
-QLabel[pill="error"] {
-    background-color: rgba(192, 88, 0, 0.16);
-    color: #C05800;
-    border: 1.5px solid #C05800;
-    border-radius: 12px;
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 700;
-    qproperty-alignment: 'AlignCenter';
-}
-
-QLabel[pill="neutral"] {
-    background-color: rgba(56, 36, 13, 0.05);
-    color: #38240D;
-    border: 1.2px solid rgba(113, 54, 0, 0.28);
-    border-radius: 11px;
-    padding: 5px 12px;
+QLabel[role="input_label"] {
+    font-family: "Manrope", system-ui, sans-serif;
     font-size: 12px;
     font-weight: 600;
-    qproperty-alignment: 'AlignCenter';
+    color: #6B4E31;
+}
+
+QLabel[role="switch_label"] {
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2E1A08;
 }
 
 /* ================= BUTTONS ================= */
-QPushButton {
-    background-color: rgba(56, 36, 13, 0.04);
-    color: #38240D;
-    border: 1.2px solid rgba(113, 54, 0, 0.35);
-    border-radius: 8px;
-    padding: 8px 16px;
+/* Header Buttons (Pause, Settings) */
+QPushButton[role="header_btn"] {
+    background-color: #EFE4B8;
+    border: none;
+    border-radius: 7px;
+    min-width: 40px;
+    max-width: 40px;
+    min-height: 40px;
+    max-height: 40px;
+}
+QPushButton[role="header_btn"]:hover {
+    background-color: #E5D8A5;
+}
+QPushButton[role="header_btn"]:pressed {
+    background-color: #DCCF9B;
+}
+
+/* Hero 'Back up now' Button */
+QPushButton[role="hero_btn"] {
+    background-color: #B85400;
+    color: #FFF8E6;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: 7px;
+    padding: 16px 28px;
+}
+QPushButton[role="hero_btn"]:hover {
+    background-color: #A34A00;
+}
+QPushButton[role="hero_btn"]:disabled {
+    background-color: #B85400;
+    opacity: 0.45;
+    color: rgba(255, 248, 230, 0.65);
+}
+
+/* Dark Action Buttons ('Choose folder', 'Choose drive') */
+QPushButton[role="dark_btn"] {
+    background-color: #2E1A08;
+    color: #FCF7DE;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 7px;
+    padding: 11px 20px;
+}
+QPushButton[role="dark_btn"]:hover {
+    background-color: #42270D;
+}
+QPushButton[role="dark_btn"]:pressed {
+    background-color: #1F1105;
+}
+
+/* Modal Save Settings Button */
+QPushButton[role="save_btn"] {
+    background-color: #B85400;
+    color: #FFF8E6;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 7px;
+    padding: 14px 28px;
+}
+QPushButton[role="save_btn"]:hover {
+    background-color: #A34A00;
+}
+QPushButton[role="save_btn"]:pressed {
+    background-color: #8F4300;
+}
+
+/* Underline Link Buttons ('Open backup folder', 'Cancel') */
+QPushButton[role="link_btn"] {
+    background: transparent;
+    color: #A04800;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    text-decoration: underline;
+}
+QPushButton[role="link_btn"]:hover {
+    color: #B85400;
+}
+
+QPushButton[role="cancel_btn"] {
+    background: transparent;
+    color: #2E1A08;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    text-decoration: underline;
+}
+QPushButton[role="cancel_btn"]:hover {
+    color: #42270D;
+}
+
+/* Modal Close 'X' Button */
+QPushButton[role="close_btn"] {
+    background: transparent;
+    border: none;
+    min-width: 32px;
+    max-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    border-radius: 6px;
+}
+QPushButton[role="close_btn"]:hover {
+    background-color: rgba(46, 26, 8, 0.08);
+}
+
+/* Chip Buttons (Frequency, Delete After, Days) */
+QPushButton[role="chip"] {
+    background-color: #EFE4B8;
+    color: #2E1A08;
+    font-family: "Manrope", system-ui, sans-serif;
     font-size: 13px;
     font-weight: 600;
+    border: none;
+    border-radius: 7px;
+    padding: 9px 0;
+    min-height: 18px;
 }
-
-QPushButton:hover {
-    background-color: rgba(113, 54, 0, 0.12);
-    border-color: #713600;
-    color: #38240D;
+QPushButton[role="chip"]:hover {
+    background-color: #E6D9A9;
 }
-
-QPushButton:pressed {
-    background-color: rgba(56, 36, 13, 0.16);
-}
-
-QPushButton:disabled {
-    color: rgba(56, 36, 13, 0.3);
-    background-color: rgba(56, 36, 13, 0.02);
-    border-color: rgba(113, 54, 0, 0.15);
-}
-
-/* Primary Action Button (Burnt Amber Terracotta) */
-QPushButton[role="primary"] {
-    background-color: #C05800;
-    color: #FDFBD4;
-    border: 1.5px solid #C05800;
-    border-radius: 9px;
-    padding: 11px 24px;
-    font-size: 14px;
+QPushButton[role="chip"]:checked {
+    background-color: #2E1A08;
+    color: #FCF7DE;
     font-weight: 700;
 }
 
-QPushButton[role="primary"]:hover {
-    background-color: #713600;
-    border-color: #713600;
-    color: #FDFBD4;
+QPushButton[role="day_chip"] {
+    background-color: #EFE4B8;
+    color: #2E1A08;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    border-radius: 7px;
+    padding: 9px 0;
+}
+QPushButton[role="day_chip"]:hover {
+    background-color: #E6D9A9;
+}
+QPushButton[role="day_chip"]:checked {
+    background-color: #B85400;
+    color: #FFF8E6;
 }
 
-QPushButton[role="primary"]:pressed {
-    background-color: #38240D;
-    border-color: #38240D;
+/* Day Badges in Schedule Summary Card */
+QLabel[role="summary_day_on"] {
+    background-color: #B85400;
+    color: #FFF8E6;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 7px;
+    min-width: 24px;
+    max-width: 24px;
+    min-height: 24px;
+    max-height: 24px;
+    qproperty-alignment: AlignCenter;
 }
 
-/* Icon Buttons */
-QPushButton[role="icon"] {
-    background-color: rgba(56, 36, 13, 0.04);
-    border: 1.2px solid rgba(113, 54, 0, 0.35);
-    border-radius: 8px;
-    padding: 7px;
-    min-width: 34px;
-    max-width: 34px;
-    min-height: 34px;
-    max-height: 34px;
-}
-
-QPushButton[role="icon"]:hover {
-    background-color: rgba(192, 88, 0, 0.12);
-    border-color: #C05800;
-}
-
-QPushButton[role="icon"]:pressed {
-    background-color: rgba(56, 36, 13, 0.15);
-}
-
-/* Ghost Button */
-QPushButton[role="ghost"] {
-    background-color: transparent;
-    color: #713600;
-    border: 1.2px solid transparent;
-    padding: 7px 14px;
-    font-weight: 600;
-    font-size: 13px;
-}
-
-QPushButton[role="ghost"]:hover {
-    background-color: rgba(113, 54, 0, 0.08);
-    border-color: rgba(113, 54, 0, 0.25);
-    color: #38240D;
+QLabel[role="summary_day_off"] {
+    background-color: #E4D8A3;
+    color: #5E4426;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 7px;
+    min-width: 24px;
+    max-width: 24px;
+    min-height: 24px;
+    max-height: 24px;
+    qproperty-alignment: AlignCenter;
 }
 
 /* ================= INPUTS & CONTROLS ================= */
-QLineEdit, QComboBox, QTimeEdit, QSpinBox {
-    background-color: #FDFBD4;
-    color: #38240D;
-    border: 1.2px solid rgba(113, 54, 0, 0.35);
-    border-radius: 8px;
-    padding: 4px 10px;
-    min-height: 26px;
-    font-size: 13px;
+QTimeEdit, QLineEdit, QSpinBox, QComboBox {
+    background-color: #EFE4B8;
+    color: #2E1A08;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 14px;
+    min-height: 22px;
 }
 
-QLineEdit:focus, QComboBox:focus, QTimeEdit:focus, QSpinBox:focus {
-    border: 1.5px solid #C05800;
-    background-color: #FDFBD4;
+QTimeEdit::up-button, QTimeEdit::down-button,
+QSpinBox::up-button, QSpinBox::down-button {
+    width: 0px;
+    height: 0px;
+    border: none;
 }
 
 QComboBox::drop-down {
     border: none;
-    width: 24px;
+    padding-right: 10px;
 }
 
-/* ================= PROGRESS BAR ================= */
-QProgressBar {
-    background-color: rgba(56, 36, 13, 0.08);
-    border: 1px solid rgba(113, 54, 0, 0.25);
-    border-radius: 5px;
-    max-height: 8px;
-    text-align: center;
+/* QScrollArea clean styling */
+QScrollArea {
+    background: transparent;
+    border: none;
 }
-
-QProgressBar::chunk {
-    background-color: #C05800;
-    border-radius: 4px;
+QScrollArea > QWidget > QWidget {
+    background: transparent;
 }
-
-/* ================= CHECKBOXES ================= */
-QCheckBox {
-    color: #38240D;
-    font-size: 13px;
-    spacing: 10px;
-    font-weight: 500;
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 0px;
 }
-
-QCheckBox::indicator {
-    width: 18px;
-    height: 18px;
-    border-radius: 5px;
-    border: 1.2px solid #713600;
-    background-color: #FDFBD4;
+QScrollBar::handle:vertical {
+    background: #E8DBA6;
+    border-radius: 3px;
+    min-height: 24px;
 }
-
-QCheckBox::indicator:hover {
-    border-color: #C05800;
-}
-
-QCheckBox::indicator:checked {
-    background-color: #C05800;
-    border-color: #38240D;
-}
-
-/* ================= TOOLTIPS & MENUS ================= */
-QToolTip {
-    background-color: #FDFBD4;
-    color: #38240D;
-    border: 1.2px solid #713600;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 12px;
-}
-
-QMenu {
-    background-color: #FDFBD4;
-    border: 1.5px solid rgba(113, 54, 0, 0.35);
-    border-radius: 10px;
-    padding: 8px;
-}
-
-QMenu::item {
-    padding: 8px 24px 8px 14px;
-    border-radius: 6px;
-    color: #38240D;
-    font-size: 13px;
-}
-
-QMenu::item:selected {
-    background-color: #C05800;
-    color: #FDFBD4;
-}
-
-QMenu::separator {
-    height: 1px;
-    background-color: rgba(113, 54, 0, 0.25);
-    margin: 4px 6px;
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
 }
 """
+
+# Alias for backwards compatibility
+MODERN_DARK_STYLE = TETHR_DESIGN_STYLE

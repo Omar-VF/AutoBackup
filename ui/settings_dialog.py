@@ -119,11 +119,9 @@ class SettingsDialog(QDialog):
         # Toggles
         self.cb_sound = QCheckBox("Audible chime on success / warning on failure")
         self.cb_notify = QCheckBox("Windows desktop notifications")
-        self.cb_startup = QCheckBox("Start automatically on Windows boot (System Tray)")
 
         card_layout.addWidget(self.cb_sound)
         card_layout.addWidget(self.cb_notify)
-        card_layout.addWidget(self.cb_startup)
 
         layout.addWidget(card)
 
@@ -163,7 +161,6 @@ class SettingsDialog(QDialog):
         self.spin_retention.setValue(self.config.retention_days)
         self.cb_sound.setChecked(self.config.get("sound_alerts", True))
         self.cb_notify.setChecked(self.config.get("desktop_notifications", True))
-        self.cb_startup.setChecked(autostart.is_autostart_enabled())
 
     def _save(self):
         selected_days = [i for i, cb in enumerate(self.day_cbs) if cb.isChecked()]
@@ -179,8 +176,6 @@ class SettingsDialog(QDialog):
                 "retention_days": self.spin_retention.value(),
                 "sound_alerts": self.cb_sound.isChecked(),
                 "desktop_notifications": self.cb_notify.isChecked(),
-                "run_on_startup": self.cb_startup.isChecked(),
             }
         )
-        autostart.set_autostart(self.cb_startup.isChecked())
         self.accept()

@@ -18,7 +18,7 @@ class SystemTrayManager(QObject):
         self.config = config_manager
         self.tray_icon = QSystemTrayIcon(parent)
         self.tray_icon.setIcon(create_tray_icon("active"))
-        self.tray_icon.setToolTip("Shop AutoBackup Pro - Automated Hourly Backup")
+        self.tray_icon.setToolTip("Tethr - Automated Billing Backup")
 
         self._create_menu()
         self.tray_icon.activated.connect(self._on_tray_activated)
@@ -37,14 +37,14 @@ class SystemTrayManager(QObject):
         self.backup_now_action = self.menu.addAction("Backup Now")
         self.backup_now_action.triggered.connect(self.backup_now_requested.emit)
 
-        self.pause_resume_action = self.menu.addAction("Pause AutoBackup")
+        self.pause_resume_action = self.menu.addAction("Pause Tethr")
         self.pause_resume_action.triggered.connect(self._toggle_pause)
 
         self.settings_action = self.menu.addAction("Settings...")
         self.settings_action.triggered.connect(self.settings_requested.emit)
 
         self.menu.addSeparator()
-        self.exit_action = self.menu.addAction("Exit AutoBackup")
+        self.exit_action = self.menu.addAction("Exit Tethr")
         self.exit_action.triggered.connect(self.exit_requested.emit)
 
         self.tray_icon.setContextMenu(self.menu)
@@ -61,19 +61,22 @@ class SystemTrayManager(QObject):
         self.config.is_paused = not is_paused
         self.update_state()
 
+    def set_status(self, current_status: str = "active", tooltip_text: str = ""):
+        self.update_state(current_status, tooltip_text)
+
     def update_state(self, current_status: str = "active", tooltip_text: str = ""):
         """Updates the icon appearance, context menu text, and tooltip."""
         if self.config.is_paused:
             self.tray_icon.setIcon(create_tray_icon("paused"))
-            self.pause_resume_action.setText("Resume AutoBackup")
+            self.pause_resume_action.setText("Resume Tethr")
             self.status_action.setText("Status: Paused")
-            self.tray_icon.setToolTip("Shop AutoBackup Pro - PAUSED")
+            self.tray_icon.setToolTip("Tethr - PAUSED")
         else:
             self.tray_icon.setIcon(create_tray_icon(current_status))
-            self.pause_resume_action.setText("Pause AutoBackup")
+            self.pause_resume_action.setText("Pause Tethr")
             if tooltip_text:
                 self.status_action.setText(f"Status: {tooltip_text[:30]}")
-                self.tray_icon.setToolTip(f"Shop AutoBackup Pro - {tooltip_text}")
+                self.tray_icon.setToolTip(f"Tethr - {tooltip_text}")
 
     def notify(self, title: str, message: str, is_error: bool = False):
         """Displays a native Windows toast notification via the system tray."""
