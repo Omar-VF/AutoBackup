@@ -38,7 +38,7 @@ def main():
     if sys.platform == "win32":
         try:
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("OmarVF.Tethr.App.1.0")
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Tethr")
         except Exception:
             pass
 
@@ -59,7 +59,11 @@ def main():
 
     # Load custom fonts
     from PyQt6.QtGui import QFontDatabase, QFont
-    fonts_dir = Path(__file__).resolve().parent / "assets" / "fonts"
+    if getattr(sys, "frozen", False):
+        base_dir = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+    else:
+        base_dir = Path(__file__).resolve().parent
+    fonts_dir = base_dir / "assets" / "fonts"
     if fonts_dir.exists():
         QFontDatabase.addApplicationFont(str(fonts_dir / "InstrumentSerif-Regular.ttf"))
         QFontDatabase.addApplicationFont(str(fonts_dir / "Manrope-Variable.ttf"))

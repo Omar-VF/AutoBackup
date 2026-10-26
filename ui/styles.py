@@ -14,8 +14,18 @@ Colors:
 - Muted Labels: #6B4E31
 - Inactive summary pills: #E4D8A3 (text: #5E4426)
 """
+import sys
+from pathlib import Path
 
-TETHR_DESIGN_STYLE = """
+if getattr(sys, "frozen", False):
+    _ASSETS_DIR = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)) / "assets"
+else:
+    _ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
+
+_CHEVRON_PATH = (_ASSETS_DIR / "chevron_down.png").as_posix()
+_CHEVRON_HOVER_PATH = (_ASSETS_DIR / "chevron_down_hover.png").as_posix()
+
+_STYLE_TEMPLATE = """
 /* ================= GLOBAL BASE ================= */
 QWidget {
     background-color: #FCF7DE;
@@ -211,6 +221,22 @@ QPushButton[role="header_btn"]:pressed {
     background-color: #DCCF9B;
 }
 
+/* Header Update Badge */
+QPushButton[role="update_badge"] {
+    background-color: #B85400;
+    color: #FFF8E6;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 14px;
+    min-height: 28px;
+}
+QPushButton[role="update_badge"]:hover {
+    background-color: #A34A00;
+}
+
 /* Hero 'Back up now' Button */
 QPushButton[role="hero_btn"] {
     background-color: #B85400;
@@ -347,6 +373,27 @@ QPushButton[role="day_chip"]:checked {
     color: #FFF8E6;
 }
 
+/* Preset Chips for Working Hours */
+QPushButton[role="preset_chip"] {
+    background-color: #EFE4B8;
+    color: #2E1A08;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 0;
+    min-height: 14px;
+}
+QPushButton[role="preset_chip"]:hover {
+    background-color: #E6D9A9;
+}
+QPushButton[role="preset_chip"]:checked {
+    background-color: #2E1A08;
+    color: #FCF7DE;
+    font-weight: 700;
+}
+
 /* Day Badges in Schedule Summary Card */
 QLabel[role="summary_day_on"] {
     background-color: #B85400;
@@ -377,7 +424,7 @@ QLabel[role="summary_day_off"] {
 }
 
 /* ================= INPUTS & CONTROLS ================= */
-QTimeEdit, QLineEdit, QSpinBox, QComboBox {
+QLineEdit, QSpinBox {
     background-color: #EFE4B8;
     color: #2E1A08;
     font-family: "Manrope", system-ui, sans-serif;
@@ -389,16 +436,71 @@ QTimeEdit, QLineEdit, QSpinBox, QComboBox {
     min-height: 22px;
 }
 
-QTimeEdit::up-button, QTimeEdit::down-button,
 QSpinBox::up-button, QSpinBox::down-button {
     width: 0px;
     height: 0px;
     border: none;
 }
 
+/* Modern Intuitive Dropdowns */
+QComboBox {
+    background-color: #EFE4B8;
+    color: #2E1A08;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    padding: 8px 12px;
+    min-height: 20px;
+}
+QComboBox:hover {
+    background-color: #E6D9A9;
+}
+QComboBox:focus {
+    border: 1px solid #B85400;
+}
 QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 26px;
     border: none;
-    padding-right: 10px;
+}
+QComboBox::down-arrow {
+    image: url("__CHEVRON_PATH__");
+    width: 12px;
+    height: 12px;
+    margin-right: 8px;
+}
+QComboBox::down-arrow:hover {
+    image: url("__CHEVRON_HOVER_PATH__");
+}
+QComboBox QAbstractItemView {
+    background-color: #FCF7DE;
+    color: #2E1A08;
+    border: 1px solid #E8DBA6;
+    border-radius: 8px;
+    padding: 4px;
+    outline: none;
+    selection-background-color: #B85400;
+    selection-color: #FFF8E6;
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+}
+QComboBox QAbstractItemView::item {
+    min-height: 28px;
+    padding: 3px 10px;
+    border-radius: 5px;
+}
+QComboBox QAbstractItemView::item:hover {
+    background-color: #EFE4B8;
+    color: #2E1A08;
+}
+QComboBox QAbstractItemView::item:selected {
+    background-color: #B85400;
+    color: #FFF8E6;
+    font-weight: 700;
 }
 
 /* QScrollArea clean styling */
@@ -423,6 +525,12 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
     height: 0px;
 }
 """
+
+TETHR_DESIGN_STYLE = (
+    _STYLE_TEMPLATE
+    .replace("__CHEVRON_PATH__", _CHEVRON_PATH)
+    .replace("__CHEVRON_HOVER_PATH__", _CHEVRON_HOVER_PATH)
+)
 
 # Alias for backwards compatibility
 MODERN_DARK_STYLE = TETHR_DESIGN_STYLE

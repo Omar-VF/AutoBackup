@@ -1,4 +1,5 @@
 import math
+import sys
 from pathlib import Path
 from PyQt6.QtCore import QPointF, QRectF, Qt, QSize
 from PyQt6.QtGui import (
@@ -18,7 +19,10 @@ COLOR_EYEBROW = "#F7BE72"     # Setup Needed tag
 COLOR_MUTED = "#6B4E31"       # Secondary typography
 COLOR_ARROW = "#B9A468"       # Dashed connection line
 
-ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
+if getattr(sys, "frozen", False):
+    ASSETS_DIR = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)) / "assets"
+else:
+    ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 ICON_PATH = ASSETS_DIR / "tethr_icon.png"
 
 

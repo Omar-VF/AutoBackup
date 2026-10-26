@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import sys
 from datetime import datetime, time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -13,7 +15,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "end_time": "21:00",
     "active_days": [0, 1, 2, 3, 4, 5],  # 0=Monday, 6=Sunday. Default: Mon-Sat
     "retention_days": 30,
-    "backup_prefix": "TethrBackup",
+    "backup_prefix": "",
     "sound_alerts": True,
     "desktop_notifications": True,
     "run_on_startup": False,
@@ -29,8 +31,30 @@ class ConfigManager:
     def __init__(self, config_path: Optional[str] = None):
         if config_path:
             self.config_path = Path(config_path)
+        elif getattr(sys, "frozen", False):
+            # When running as packaged application, user configuration and storage
+            # paths MUST always live in %APPDATA%/Tethr so updates never overwrite them.
+            app_data = Path(os.getenv("APPDATA", ".")) / "Tethr"
+            app_data.mkdir(parents=True, exist_ok=True)
+            self.config_path = app_data / "config.json"
+
+            # Migration: if a legacy config exists in exe directory or parent, migrate it
+            if not self.config_path.exists() or self.config_path.stat().st_size == 0:
+                try:
+                    exe_dir = Path(sys.executable).parent
+                    candidates = [
+                        exe_dir / "config.json",
+                        exe_dir / "_internal" / "config.json",
+                        Path(__file__).resolve().parent.parent / "config.json",
+                    ]
+                    for cand in candidates:
+                        if cand.exists() and cand.is_file() and cand.stat().st_size > 0:
+                            shutil.copy2(cand, self.config_path)
+                            break
+                except Exception:
+                    pass
         else:
-            # Place config in local directory if writable, else user AppData
+            # Development mode: local repository directory if writable, else AppData
             local_path = Path(__file__).resolve().parent.parent / "config.json"
             try:
                 if not local_path.exists() or local_path.stat().st_size == 0:

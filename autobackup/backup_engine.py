@@ -84,7 +84,7 @@ class BackupEngine:
         start_time = time.time()
         source_dir = self.config.source_folder
         dest_dir = self.config.destination_folder
-        prefix = self.config.get("backup_prefix", "BillingBackup")
+        prefix = self.config.get("backup_prefix", "")
 
         if not source_dir or not os.path.isdir(source_dir):
             err = f"Source billing directory is invalid or missing: '{source_dir}'"
@@ -117,9 +117,9 @@ class BackupEngine:
             )
             return BackupResult(success=False, error_message=reason)
 
-        # Build archive filenames
-        timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        archive_name = f"{prefix}_{timestamp_str}.zip"
+        # Build archive filename: DD-MM-YYYY_HR-MIN.zip
+        timestamp_str = datetime.now().strftime("%d-%m-%Y_%H-%M")
+        archive_name = f"{timestamp_str}.zip"
         dest_path = Path(dest_dir)
         final_archive_path = dest_path / archive_name
         temp_archive_path = dest_path / f"{archive_name}.tmp"
@@ -260,30 +260,43 @@ class BackupEngine:
         purged = 0
         dest_path = Path(dest_dir)
 
-        pattern = re.compile(rf"^{re.escape(prefix)}_(\d{{4}}-\d{{2}}-\d{{2}}_\d{{2}}-\d{{2}}-\d{{2}})\.zip$")
+        # Match DD-MM-YYYY_HH-MM format (with or without custom prefix)
+        pat_new = re.compile(r"^(?:.*_)?(\d{2}-\d{2}-\d{4}_\d{2}-\d{2})\.zip$")
+        # Match legacy YYYY-MM-DD_HH-MM-SS format
+        pat_legacy = re.compile(r"^(?:.*_)?(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.zip$")
 
         try:
             for item in dest_path.iterdir():
                 if item.is_file():
-                    match = pattern.match(item.name)
-                    if match:
+                    match_new = pat_new.match(item.name)
+                    if match_new:
                         try:
-                            file_time = datetime.strptime(match.group(1), "%Y-%m-%d_%H-%M-%S")
+                            file_time = datetime.strptime(match_new.group(1), "%d-%m-%Y_%H-%M")
                             if file_time < cutoff_date:
                                 item.unlink()
                                 purged += 1
                                 self.logger.info(f"Purged expired backup: {item.name}")
-                        except Exception as parse_err:
-                            # Fallback to file modification time if filename format differs
-                            mtime = datetime.fromtimestamp(item.stat().st_mtime)
-                            if mtime < cutoff_date:
+                            continue
+                        except Exception:
+                            pass
+
+                    match_legacy = pat_legacy.match(item.name)
+                    if match_legacy:
+                        try:
+                            file_time = datetime.strptime(match_legacy.group(1), "%Y-%m-%d_%H-%M-%S")
+                            if file_time < cutoff_date:
                                 item.unlink()
                                 purged += 1
-                                self.logger.info(f"Purged expired backup by mtime: {item.name}")
-                    elif item.name.endswith(".tmp") and item.name.startswith(prefix):
+                                self.logger.info(f"Purged expired legacy backup: {item.name}")
+                            continue
+                        except Exception:
+                            pass
+
+                    # Clean up orphaned .tmp files
+                    if item.name.endswith(".tmp"):
                         try:
                             item.unlink()
-                            self.logger.info(f"Cleaned up orphaned temporary file from interrupted backup: {item.name}")
+                            self.logger.info(f"Cleaned up orphaned temporary file: {item.name}")
                         except Exception:
                             pass
         except Exception as e:

@@ -2,35 +2,57 @@
 
 An automated billing data vault for Windows desktop designed for retail shops, billing counters, and accounting PCs.
 
-**Tethr** permanently connects your billing directory to an external/secondary drive, automatically producing timestamped, verified archives every hour during business working hours.
+**Tethr** permanently connects your critical billing directory to a secondary storage drive or external disk, automatically producing timestamped, verified archives during active store business hours.
 
 ---
 
 ## ✨ Features
 
 - **Lavish & Minimalist Desktop Canvas**:
-  - Warm cream (`#FDFBD4`) and espresso (`#38240D`) editorial paper aesthetic with terracotta (`#C05800`) accents.
-  - Generous 920 × 620 px workspace with clean visual hierarchy.
-  - Live in-window settings popover modal — zero second-window clutter on Windows.
-  - Vector iconography for folders, drives, gears, and sync operations.
+  - Warm linen cream (`#FCF7DE`) and deep espresso (`#2E1A08`) editorial aesthetic with vibrant terracotta (`#B85400`) accents.
+  - Custom typography loaded natively via **Instrument Serif** and **Manrope**.
+  - Generous 1140 × 720 px workspace with clean visual hierarchy.
+  - Live in-window schedule popover modal (570 px) — zero second-window clutter on Windows.
+  - Custom vector iconography for folders, drives, gears, sync operations, and dashed connectors.
 - **Intelligent Working Hours Gate**:
-  - Automatically runs hourly (or 15m, 30m, 2h, 4h) only when the shop is open (e.g. 09:00 AM – 09:00 PM).
+  - Automatically runs hourly (or 5m, 15m, 30m, 2h, 4h, 6h, or custom intervals) only when the shop is open (e.g. 09:00 AM – 09:00 PM).
   - Configurable active working days (e.g. Monday to Saturday).
+  - Smart catch-up scheduler: if the system boots mid-day after store hours start, Tethr immediately catches up with a backup.
 - **Atomic ZIP Compression & Verification**:
-  - Creates safe `TethrBackup_YYYY-MM-DD_HH-MM-SS.zip` archives.
-  - Writes to `.tmp` first, verifies archive health with `testzip()`, and only then finalizes to `.zip`.
-  - Automatic retention cleaner: auto-purges archives older than *N* days (default 30 days).
+  - Creates safe `DD-MM-YYYY_HR-MIN.zip` archives (e.g. `26-10-2026_21-30.zip`).
+  - Writes to `.tmp` first, verifies archive health with `testzip()`, and only then atomically finalizes to `.zip`.
+  - Automatic retention cleaner: auto-purges archives older than *N* days (default 30 days) and cleans orphaned temporary files.
   - Target drive health check and low-space warnings.
 - **Quiet System Tray Integration**:
   - Closing (`✕`) docks Tethr quietly to the Windows System Tray near the clock.
   - Windows desktop notifications and optional success/warning chimes.
   - Windows boot autostart option.
+- **GitHub Release Auto-Updater**:
+  - Queries `Omar-VF/AutoBackup` releases via background thread on startup and periodically every 4 hours.
+  - When you tag a new release (e.g. `git tag v1.0.1 && git push origin v1.0.1`), GitHub Actions automatically builds `Tethr-Setup.exe` and publishes the release.
+  - Tethr detects the new release, shows the changelog in an editorial update modal, downloads the installer, and seamlessly upgrades and restarts the app.
 
 ---
 
-## 🚀 Quick Launch
+## 📦 Windows Setup Installer
+
+A standalone Windows installer is available in:
+👉 **[`dist/installer/Tethr-Setup.exe`](file:///d:/Projects/AutoBackup/dist/installer/Tethr-Setup.exe)**
+
+- Standalone executable (requires no Python or external dependencies on the target PC).
+- Installs to Program Files / User AppData with multi-resolution desktop and Start Menu shortcuts.
+- Includes Windows Add/Remove Programs uninstaller.
+
+To rebuild the installer from source at any time:
+```powershell
+.\build_installer.bat
+```
+
+---
+
+## 🚀 Quick Launch (Source)
 
 ```powershell
 python .\main.py
 ```
-*(or double-click `run_autobackup.bat`).*
+*(or double-click `run_autobackup.bat` for windowless background startup).*

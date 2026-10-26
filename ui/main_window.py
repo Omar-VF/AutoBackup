@@ -15,22 +15,24 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListView,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QScrollArea,
     QSpinBox,
     QStackedLayout,
-    QTimeEdit,
     QVBoxLayout,
     QWidget,
 )
 
-from autobackup import autostart
+from autobackup import autostart, __version__
 from autobackup.backup_engine import BackupResult
 from autobackup.config import ConfigManager
 from autobackup.logger import BackupLogger
 from autobackup.scheduler import BackupScheduler
+from autobackup.updater import UpdateCheckWorker, UpdateInfo
+from ui.update_dialog import UpdateDialog
 from ui.icons import (
     DashedArrowWidget,
     create_app_icon,
@@ -92,6 +94,20 @@ class MainWindow(QMainWindow):
         self.master_timer.timeout.connect(self._on_tick)
         self.master_timer.start(1000)
 
+        # GitHub Release Auto-Updater
+        self._latest_update_info: Optional[UpdateInfo] = None
+        self._manual_update_check: bool = False
+        self.update_checker = UpdateCheckWorker(parent=self)
+        self.update_checker.update_available.connect(self._on_update_available)
+        self.update_checker.no_update_available.connect(self._on_no_update_available)
+        self.update_checker.check_failed.connect(self._on_update_check_failed)
+
+        # Background update check (3 seconds after startup, then every 4 hours)
+        QTimer.singleShot(3000, lambda: self.check_for_updates(manual=False))
+        self.update_timer = QTimer(self)
+        self.update_timer.timeout.connect(lambda: self.check_for_updates(manual=False))
+        self.update_timer.start(4 * 3600 * 1000)
+
     def _center_on_screen(self):
         screen = self.screen() or QApplication.primaryScreen()
         if screen:
@@ -124,6 +140,13 @@ class MainWindow(QMainWindow):
         header.addWidget(title_lbl)
 
         header.addStretch()
+
+        self.btn_update_badge = QPushButton("Update Available")
+        self.btn_update_badge.setProperty("role", "update_badge")
+        self.btn_update_badge.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_update_badge.clicked.connect(self._open_update_dialog)
+        self.btn_update_badge.hide()
+        header.addWidget(self.btn_update_badge)
 
         self.btn_pause = QPushButton()
         self.btn_pause.setProperty("role", "header_btn")
@@ -468,12 +491,10 @@ class MainWindow(QMainWindow):
 
         self.combo_custom_unit = QComboBox()
         self.combo_custom_unit.addItems(["minutes", "hours"])
+        for i in range(self.combo_custom_unit.count()):
+            self.combo_custom_unit.setItemData(i, int(Qt.AlignmentFlag.AlignCenter), int(Qt.ItemDataRole.TextAlignmentRole))
         h_custom.addWidget(self.combo_custom_unit, stretch=1)
         v_freq_content.addWidget(self.custom_freq_container)
-
-        lbl_freq_note = QLabel("1 hour is a good default for most folders.")
-        lbl_freq_note.setProperty("role", "field_note")
-        v_freq_content.addWidget(lbl_freq_note)
         row_freq.addLayout(v_freq_content)
         form_layout.addLayout(row_freq)
 
@@ -485,30 +506,75 @@ class MainWindow(QMainWindow):
         lbl_hours_sec.setFixedWidth(96)
         row_hours.addWidget(lbl_hours_sec, alignment=Qt.AlignmentFlag.AlignTop)
 
-        v_hours_content = QHBoxLayout()
-        v_hours_content.setSpacing(8)
+        v_hours_content = QVBoxLayout()
+        v_hours_content.setSpacing(6)
+
+        h_combos = QHBoxLayout()
+        h_combos.setSpacing(8)
 
         v_opens = QVBoxLayout()
         v_opens.setSpacing(4)
         lbl_opens = QLabel("Opens")
         lbl_opens.setProperty("role", "input_label")
+        lbl_opens.setAlignment(Qt.AlignmentFlag.AlignCenter)
         v_opens.addWidget(lbl_opens)
-        self.time_opens = QTimeEdit()
-        self.time_opens.setDisplayFormat("hh:mm AP")
-        self.time_opens.setTime(QTime(9, 0))
-        v_opens.addWidget(self.time_opens)
-        v_hours_content.addLayout(v_opens)
+        self.combo_opens = QComboBox()
+        self.combo_opens.setView(QListView())
+        self.combo_opens.setMaxVisibleItems(10)
+        self.combo_opens.setCursor(Qt.CursorShape.PointingHandCursor)
+        v_opens.addWidget(self.combo_opens)
+        h_combos.addLayout(v_opens, stretch=1)
 
         v_closes = QVBoxLayout()
         v_closes.setSpacing(4)
         lbl_closes = QLabel("Closes")
         lbl_closes.setProperty("role", "input_label")
+        lbl_closes.setAlignment(Qt.AlignmentFlag.AlignCenter)
         v_closes.addWidget(lbl_closes)
-        self.time_closes = QTimeEdit()
-        self.time_closes.setDisplayFormat("hh:mm AP")
-        self.time_closes.setTime(QTime(21, 0))
-        v_closes.addWidget(self.time_closes)
-        v_hours_content.addLayout(v_closes)
+        self.combo_closes = QComboBox()
+        self.combo_closes.setView(QListView())
+        self.combo_closes.setMaxVisibleItems(10)
+        self.combo_closes.setCursor(Qt.CursorShape.PointingHandCursor)
+        v_closes.addWidget(self.combo_closes)
+        h_combos.addLayout(v_closes, stretch=1)
+
+        v_hours_content.addLayout(h_combos)
+
+        # Quick Preset Chips Row - two paired columns matching the Opens/Closes columns
+        self.hour_presets = [
+            ("9 AM – 9 PM", "09:00", "21:00"),
+            ("9 AM – 6 PM", "09:00", "18:00"),
+            ("10 AM – 8 PM", "10:00", "20:00"),
+            ("24 Hours", "00:00", "23:59"),
+        ]
+        presets_row = QHBoxLayout()
+        presets_row.setSpacing(8)
+
+        left_presets = QHBoxLayout()
+        left_presets.setSpacing(4)
+        right_presets = QHBoxLayout()
+        right_presets.setSpacing(4)
+
+        self.hour_preset_buttons: List[QPushButton] = []
+        for idx, (label, st_val, et_val) in enumerate(self.hour_presets):
+            btn_p = QPushButton(label)
+            btn_p.setCheckable(True)
+            btn_p.setProperty("role", "preset_chip")
+            btn_p.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_p.clicked.connect(lambda _, s=st_val, e=et_val: self._apply_hour_preset(s, e))
+            if idx < 2:
+                left_presets.addWidget(btn_p)
+            else:
+                right_presets.addWidget(btn_p)
+            self.hour_preset_buttons.append(btn_p)
+
+        presets_row.addLayout(left_presets, stretch=1)
+        presets_row.addLayout(right_presets, stretch=1)
+        v_hours_content.addLayout(presets_row)
+
+        self._populate_time_combos()
+        self.combo_opens.currentIndexChanged.connect(lambda _: self._update_hour_preset_buttons())
+        self.combo_closes.currentIndexChanged.connect(lambda _: self._update_hour_preset_buttons())
 
         row_hours.addLayout(v_hours_content)
         form_layout.addLayout(row_hours)
@@ -618,9 +684,16 @@ class MainWindow(QMainWindow):
         scroll.setWidget(scroll_content)
         modal_card_layout.addWidget(scroll, stretch=1)
 
-        # 6. MODAL ACTIONS (Cancel & Save settings)
+        # 6. MODAL ACTIONS (Version check, Cancel & Save settings)
         modal_actions = QHBoxLayout()
-        modal_actions.setSpacing(24)
+        modal_actions.setSpacing(16)
+
+        self.btn_check_updates = QPushButton(f"v{__version__} • Check for updates")
+        self.btn_check_updates.setProperty("role", "link_btn")
+        self.btn_check_updates.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_check_updates.clicked.connect(lambda: self.check_for_updates(manual=True))
+        modal_actions.addWidget(self.btn_check_updates)
+
         modal_actions.addStretch()
 
         btn_cancel = QPushButton("Cancel")
@@ -650,8 +723,53 @@ class MainWindow(QMainWindow):
         self.tray.open_requested.connect(self._show_and_raise)
         self.tray.backup_now_requested.connect(self._manual_backup)
         self.tray.settings_requested.connect(self._open_inwindow_settings)
+        self.tray.check_updates_requested.connect(lambda: self.check_for_updates(manual=True))
         self.tray.pause_toggled.connect(self._refresh_state)
         self.tray.exit_requested.connect(QApplication.instance().quit)
+
+    # ================= UPDATE MANAGEMENT =================
+    def check_for_updates(self, manual: bool = False):
+        """Asynchronously queries GitHub for newer releases."""
+        self._manual_update_check = manual
+        if not self.update_checker.isRunning():
+            self.update_checker.start()
+
+    def _open_update_dialog(self):
+        if self._latest_update_info:
+            dlg = UpdateDialog(self._latest_update_info, self)
+            dlg.exec()
+        else:
+            self.check_for_updates(manual=True)
+
+    def _on_update_available(self, info: UpdateInfo):
+        self._latest_update_info = info
+        self.btn_update_badge.setText(f"Update {info.version}")
+        self.btn_update_badge.show()
+        self.tray.notify(
+            "Tethr Update Available",
+            f"Version {info.version} is available. Click to review and update.",
+        )
+        if self._manual_update_check:
+            self._manual_update_check = False
+            self._open_update_dialog()
+
+    def _on_no_update_available(self, current_v: str):
+        if self._manual_update_check:
+            self._manual_update_check = False
+            QMessageBox.information(
+                self,
+                "Tethr Up to Date",
+                f"You are running the latest version of Tethr (v{current_v}).",
+            )
+
+    def _on_update_check_failed(self, error: str):
+        if self._manual_update_check:
+            self._manual_update_check = False
+            QMessageBox.warning(
+                self,
+                "Update Check",
+                f"Could not check for updates:\n{error}",
+            )
 
     # ================= MODAL STATE MANAGEMENT =================
     def _select_freq(self, minutes: int):
@@ -673,6 +791,99 @@ class MainWindow(QMainWindow):
         # Already toggled by checkable button click
         pass
 
+    @staticmethod
+    def _format_time_label(hour: int, minute: int) -> str:
+        t = QTime(hour, minute)
+        return t.toString("hh:mm AP")
+
+    def _populate_time_combos(self):
+        """Populates Opens and Closes combos with 15-minute intervals across 24 hours."""
+        self.combo_opens.blockSignals(True)
+        self.combo_closes.blockSignals(True)
+        self.combo_opens.clear()
+        self.combo_closes.clear()
+
+        for h in range(24):
+            for m in (0, 15, 30, 45):
+                time_24 = f"{h:02d}:{m:02d}"
+                label = self._format_time_label(h, m)
+                self.combo_opens.addItem(label, time_24)
+                self.combo_closes.addItem(label, time_24)
+
+        # Convenient end-of-day closing option
+        self.combo_closes.addItem("11:59 PM (End of day)", "23:59")
+
+        # Center-align all items for balanced presentation
+        for combo in (self.combo_opens, self.combo_closes):
+            for i in range(combo.count()):
+                combo.setItemData(i, int(Qt.AlignmentFlag.AlignCenter), int(Qt.ItemDataRole.TextAlignmentRole))
+
+        self.combo_opens.blockSignals(False)
+        self.combo_closes.blockSignals(False)
+
+    def _set_combo_time(self, combo: QComboBox, time_str: str):
+        """Sets combo selection by HH:MM string (e.g. '09:00'), adding entry if missing."""
+        idx = combo.findData(time_str)
+        if idx >= 0:
+            combo.setCurrentIndex(idx)
+            return
+
+        try:
+            parts = [int(p) for p in time_str.split(":")]
+            h, m = parts[0], parts[1]
+            label = self._format_time_label(h, m)
+            insert_pos = 0
+            for i in range(combo.count()):
+                d = combo.itemData(i)
+                if d and d > time_str:
+                    insert_pos = i
+                    break
+                insert_pos = i + 1
+            combo.insertItem(insert_pos, label, time_str)
+            combo.setItemData(insert_pos, int(Qt.AlignmentFlag.AlignCenter), int(Qt.ItemDataRole.TextAlignmentRole))
+            combo.setCurrentIndex(insert_pos)
+        except Exception:
+            combo.setCurrentIndex(0)
+
+    def _apply_hour_preset(self, start_t: str, end_t: str):
+        self._set_combo_time(self.combo_opens, start_t)
+        self._set_combo_time(self.combo_closes, end_t)
+        self._update_hour_preset_buttons()
+
+    def _update_hour_preset_buttons(self):
+        curr_st = self.combo_opens.currentData()
+        curr_et = self.combo_closes.currentData()
+        for btn, (_, st, et) in zip(self.hour_preset_buttons, self.hour_presets):
+            btn.setChecked(curr_st == st and curr_et == et)
+
+    @property
+    def time_opens(self):
+        class _TimeCompat:
+            def __init__(self, combo, parent):
+                self._combo = combo
+                self._parent = parent
+            def time(self):
+                d = self._combo.currentData() or "09:00"
+                h, m = map(int, d.split(":"))
+                return QTime(h, m)
+            def setTime(self, qtime: QTime):
+                self._parent._set_combo_time(self._combo, qtime.toString("HH:mm"))
+        return _TimeCompat(self.combo_opens, self)
+
+    @property
+    def time_closes(self):
+        class _TimeCompat:
+            def __init__(self, combo, parent):
+                self._combo = combo
+                self._parent = parent
+            def time(self):
+                d = self._combo.currentData() or "21:00"
+                h, m = map(int, d.split(":"))
+                return QTime(h, m)
+            def setTime(self, qtime: QTime):
+                self._parent._set_combo_time(self._combo, qtime.toString("HH:mm"))
+        return _TimeCompat(self.combo_closes, self)
+
     def _open_inwindow_settings(self):
         """Populates and opens the in-window modal overlay."""
         # Active days
@@ -683,17 +894,9 @@ class MainWindow(QMainWindow):
         # Hours
         st = self.config.get("start_time", "09:00")
         et = self.config.get("end_time", "21:00")
-        try:
-            sh, sm = map(int, st.split(":"))
-            self.time_opens.setTime(QTime(sh, sm))
-        except Exception:
-            self.time_opens.setTime(QTime(9, 0))
-
-        try:
-            eh, em = map(int, et.split(":"))
-            self.time_closes.setTime(QTime(eh, em))
-        except Exception:
-            self.time_closes.setTime(QTime(21, 0))
+        self._set_combo_time(self.combo_opens, st)
+        self._set_combo_time(self.combo_closes, et)
+        self._update_hour_preset_buttons()
 
         # Frequency
         interval = self.config.get("interval_minutes", 60)

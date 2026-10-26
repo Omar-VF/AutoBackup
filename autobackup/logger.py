@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -11,7 +12,10 @@ class BackupLogger:
 
     def __init__(self, data_dir: Optional[Path] = None):
         if data_dir is None:
-            self.data_dir = Path(__file__).resolve().parent.parent / "logs"
+            if getattr(sys, "frozen", False):
+                self.data_dir = Path(os.getenv("APPDATA", ".")) / "Tethr" / "logs"
+            else:
+                self.data_dir = Path(__file__).resolve().parent.parent / "logs"
         else:
             self.data_dir = Path(data_dir)
 

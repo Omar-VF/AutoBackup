@@ -11,6 +11,7 @@ class SystemTrayManager(QObject):
     open_requested = pyqtSignal()
     backup_now_requested = pyqtSignal()
     settings_requested = pyqtSignal()
+    check_updates_requested = pyqtSignal()
     exit_requested = pyqtSignal()
     pause_toggled = pyqtSignal()
 
@@ -43,6 +44,10 @@ class SystemTrayManager(QObject):
 
         self.settings_action = self.menu.addAction("Settings...")
         self.settings_action.triggered.connect(self.settings_requested.emit)
+
+        self.menu.addSeparator()
+        self.check_updates_action = self.menu.addAction("Check for Updates...")
+        self.check_updates_action.triggered.connect(self.check_updates_requested.emit)
 
         self.menu.addSeparator()
         self.exit_action = self.menu.addAction("Exit Tethr")

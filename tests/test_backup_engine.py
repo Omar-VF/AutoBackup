@@ -40,7 +40,7 @@ class TestAutoBackupCore(unittest.TestCase):
             "end_time": "22:00",
             "active_days": [0, 1, 2, 3, 4, 5, 6],
             "retention_days": 7,
-            "backup_prefix": "TestBillingBackup",
+            "backup_prefix": "",
             "min_free_space_mb": 1,
         })
 
@@ -54,6 +54,7 @@ class TestAutoBackupCore(unittest.TestCase):
         result = self.engine.execute_backup()
         self.assertTrue(result.success, f"Backup failed: {result.error_message}")
         self.assertTrue(os.path.isfile(result.archive_path))
+        self.assertRegex(result.archive_name, r"^\d{2}-\d{2}-\d{4}_\d{2}-\d{2}\.zip$")
         self.assertGreater(result.size_bytes, 0)
         self.assertEqual(result.file_count, 6)
 
@@ -73,9 +74,9 @@ class TestAutoBackupCore(unittest.TestCase):
         self.assertFalse(self.config.is_within_working_hours(dt_night))
 
     def test_retention_purge(self):
-        # Create an artificial old backup file (10 days old)
+        # Create an artificial old backup file (10 days old in DD-MM-YYYY_HR-MIN format)
         old_time = datetime.now() - timedelta(days=10)
-        old_filename = f"TestBillingBackup_{old_time.strftime('%Y-%m-%d_%H-%M-%S')}.zip"
+        old_filename = f"{old_time.strftime('%d-%m-%Y_%H-%M')}.zip"
         old_path = os.path.join(self.dst_dir, old_filename)
         with open(old_path, "w") as f:
             f.write("mock old archive content")

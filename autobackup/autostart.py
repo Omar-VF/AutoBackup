@@ -9,6 +9,9 @@ REG_SUBKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 def get_startup_command() -> str:
     """Returns the exact launch command to place into the Windows startup registry."""
+    if getattr(sys, "frozen", False):
+        return f'"{sys.executable}" --minimized'
+
     main_py = Path(__file__).resolve().parent.parent / "main.py"
     # Use pythonw if available for windowless startup
     python_exe = sys.executable

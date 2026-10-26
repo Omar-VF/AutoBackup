@@ -1,0 +1,71 @@
+name: Build and Release Tethr
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Extract Tag Version
+        id: get_version
+        shell: bash
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          VER="${TAG_NAME#v}"
+          echo "VERSION=${VER}" >> $GITHUB_OUTPUT
+          echo "Release tag: ${TAG_NAME}, Version: ${VER}"
+
+      - name: Generate Application Icons
+        run: |
+          python -c "from PIL import Image; im = Image.open('assets/tethr_icon.png').convert('RGBA'); im.save('assets/tethr.ico', format='ICO', sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])"
+
+      - name: Compile Standalone Executable with PyInstaller
+        run: pyinstaller tethr.spec --noconfirm
+
+      - name: Compile Windows Setup Installer with Inno Setup
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion="${{ steps.get_version.outputs.VERSION }}" installer.iss
+
+      - name: Verify Installer Artifact
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist\installer\Tethr-Setup.exe")) {
+            throw "Error: dist\installer\Tethr-Setup.exe was not created!"
+          }
+          $sizeMb = [math]::Round((Get-Item "dist\installer\Tethr-Setup.exe").Length / 1MB, 2)
+          Write-Host "Success: Built Tethr-Setup.exe ($sizeMb MB)"
+
+      - name: Create GitHub Release and Upload Tethr-Setup.exe
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/installer/Tethr-Setup.exe
+          name: Tethr ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
