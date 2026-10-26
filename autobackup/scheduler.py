@@ -69,6 +69,20 @@ class BackupScheduler(QObject):
 
         self._calculate_next_backup_time()
 
+    @property
+    def seconds_until_next_backup(self) -> int:
+        """Returns the number of seconds remaining until the next scheduled backup."""
+        if self._next_backup_timestamp is None:
+            self._calculate_next_backup_time()
+        if self._next_backup_timestamp is None:
+            return 0
+        diff = int(self._next_backup_timestamp - time.time())
+        return max(0, diff)
+
+    def trigger_manual_backup(self) -> bool:
+        """Alias for trigger_backup for manual user interactions."""
+        return self.trigger_backup()
+
     def is_backing_up(self) -> bool:
         return self._active_worker is not None and self._active_worker.isRunning()
 
@@ -77,12 +91,15 @@ class BackupScheduler(QObject):
         now = time.time()
         interval_secs = self.config.interval_minutes * 60
 
-        if force_full_interval or self._last_backup_timestamp == 0:
+        if force_full_interval:
             self._next_backup_timestamp = now + interval_secs
+        elif self._last_backup_timestamp == 0:
+            # Never backed up before: due immediately once configured
+            self._next_backup_timestamp = now
         else:
             elapsed = now - self._last_backup_timestamp
             if elapsed >= interval_secs:
-                self._next_backup_timestamp = now  # Due immediately
+                self._next_backup_timestamp = now  # Due immediately (catch-up)
             else:
                 self._next_backup_timestamp = self._last_backup_timestamp + interval_secs
 

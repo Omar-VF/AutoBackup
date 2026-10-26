@@ -12,6 +12,7 @@ class SystemTrayManager(QObject):
     backup_now_requested = pyqtSignal()
     settings_requested = pyqtSignal()
     exit_requested = pyqtSignal()
+    pause_toggled = pyqtSignal()
 
     def __init__(self, config_manager: ConfigManager, parent=None):
         super().__init__(parent)
@@ -60,6 +61,7 @@ class SystemTrayManager(QObject):
         is_paused = self.config.is_paused
         self.config.is_paused = not is_paused
         self.update_state()
+        self.pause_toggled.emit()
 
     def set_status(self, current_status: str = "active", tooltip_text: str = ""):
         self.update_state(current_status, tooltip_text)

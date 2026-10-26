@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -378,22 +379,22 @@ class MainWindow(QMainWindow):
         self.overlay_widget.setProperty("role", "scrim")
         overlay_layout = QVBoxLayout(self.overlay_widget)
         overlay_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        overlay_layout.setContentsMargins(40, 24, 40, 24)
+        overlay_layout.setContentsMargins(40, 12, 40, 12)
 
         # Modal Card Frame
         self.modal_card = QFrame()
         self.modal_card.setProperty("card", "modal")
         self.modal_card.setFixedWidth(570)
-        self.modal_card.setMaximumHeight(680)
+        self.modal_card.setMaximumHeight(696)
 
         modal_card_layout = QVBoxLayout(self.modal_card)
-        modal_card_layout.setContentsMargins(32, 28, 32, 24)
-        modal_card_layout.setSpacing(14)
+        modal_card_layout.setContentsMargins(32, 20, 32, 16)
+        modal_card_layout.setSpacing(10)
 
         # Modal Header: Title, Subtitle, Close X
         modal_header = QHBoxLayout()
         v_mod_title = QVBoxLayout()
-        v_mod_title.setSpacing(4)
+        v_mod_title.setSpacing(2)
 
         m_title = QLabel("Backup schedule")
         m_title.setProperty("role", "modal_title")
@@ -420,8 +421,8 @@ class MainWindow(QMainWindow):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_content = QWidget()
         form_layout = QVBoxLayout(scroll_content)
-        form_layout.setContentsMargins(0, 2, 6, 2)
-        form_layout.setSpacing(14)
+        form_layout.setContentsMargins(0, 0, 4, 0)
+        form_layout.setSpacing(10)
 
         # 1. FREQUENCY SECTION
         row_freq = QHBoxLayout()
@@ -579,7 +580,7 @@ class MainWindow(QMainWindow):
         row_alerts.addWidget(lbl_alerts_sec, alignment=Qt.AlignmentFlag.AlignTop)
 
         v_alerts_content = QVBoxLayout()
-        v_alerts_content.setSpacing(12)
+        v_alerts_content.setSpacing(8)
 
         # Sound switch
         row_sw1 = QHBoxLayout()
@@ -600,6 +601,16 @@ class MainWindow(QMainWindow):
         self.switch_notif = ToggleSwitch(checked=self.config.get("desktop_notifications", True))
         row_sw2.addWidget(self.switch_notif)
         v_alerts_content.addLayout(row_sw2)
+
+        # Run on startup switch
+        row_sw3 = QHBoxLayout()
+        lbl_sw3 = QLabel("Run on startup")
+        lbl_sw3.setProperty("role", "switch_label")
+        row_sw3.addWidget(lbl_sw3)
+        row_sw3.addStretch()
+        self.switch_autostart = ToggleSwitch(checked=self.config.get("run_on_startup", False))
+        row_sw3.addWidget(self.switch_autostart)
+        v_alerts_content.addLayout(row_sw3)
 
         row_alerts.addLayout(v_alerts_content)
         form_layout.addLayout(row_alerts)
@@ -639,6 +650,8 @@ class MainWindow(QMainWindow):
         self.tray.open_requested.connect(self._show_and_raise)
         self.tray.backup_now_requested.connect(self._manual_backup)
         self.tray.settings_requested.connect(self._open_inwindow_settings)
+        self.tray.pause_toggled.connect(self._refresh_state)
+        self.tray.exit_requested.connect(QApplication.instance().quit)
 
     # ================= MODAL STATE MANAGEMENT =================
     def _select_freq(self, minutes: int):
@@ -713,6 +726,7 @@ class MainWindow(QMainWindow):
         # Switches
         self.switch_chime.setChecked(self.config.get("sound_alerts", True))
         self.switch_notif.setChecked(self.config.get("desktop_notifications", True))
+        self.switch_autostart.setChecked(self.config.get("run_on_startup", False))
 
         self.overlay_widget.show()
         self.overlay_widget.raise_()
@@ -745,6 +759,7 @@ class MainWindow(QMainWindow):
         # Switches
         chime = self.switch_chime.isChecked()
         notif = self.switch_notif.isChecked()
+        run_startup = self.switch_autostart.isChecked()
 
         # Commit to config
         self.config.set("interval_minutes", interval, auto_save=False)
@@ -753,11 +768,11 @@ class MainWindow(QMainWindow):
         self.config.set("end_time", et, auto_save=False)
         self.config.set("retention_days", ret_days, auto_save=False)
         self.config.set("sound_alerts", chime, auto_save=False)
-        self.config.set("desktop_notifications", notif, auto_save=True)
+        self.config.set("desktop_notifications", notif, auto_save=False)
+        self.config.set("run_on_startup", run_startup, auto_save=True)
 
-        # Clean up autostart registry if previously configured
-        if autostart.is_autostart_enabled():
-            autostart.set_autostart(False)
+        # Update Windows autostart registry
+        autostart.set_autostart(run_startup)
 
         self._close_inwindow_settings()
         self._refresh_state()
@@ -804,7 +819,8 @@ class MainWindow(QMainWindow):
                 "Backups then run on their own during your active hours."
             )
             self.btn_backup_now.setEnabled(False)
-            self.lbl_hero_note.setText("Finish 2 steps to enable")
+            steps_left = 2 - int(has_src) - int(has_dst)
+            self.lbl_hero_note.setText(f"Finish {steps_left} {'step' if steps_left == 1 else 'steps'} to enable")
             self.tray.set_status("paused")
         elif is_paused:
             self.lbl_hero_tag.setText("PAUSED")
@@ -890,6 +906,7 @@ class MainWindow(QMainWindow):
             self.lbl_hero_title.setText(f"Next backup in {mins}m")
 
     def _on_tick(self):
+        self.scheduler.tick()
         if self.config.is_configured() and not self.config.get("is_paused", False):
             self._update_countdown_label()
 
@@ -945,6 +962,12 @@ class MainWindow(QMainWindow):
             os.startfile(dst)
         elif self.config.get("source_folder", "") and os.path.exists(self.config.get("source_folder", "")):
             os.startfile(self.config.get("source_folder", ""))
+        else:
+            QMessageBox.information(
+                self,
+                "No Folder Configured",
+                "Please configure a backup destination folder first.",
+            )
 
     def _get_free_space_gb(self, folder_path: str) -> Optional[float]:
         try:

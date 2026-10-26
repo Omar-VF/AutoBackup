@@ -280,6 +280,12 @@ class BackupEngine:
                                 item.unlink()
                                 purged += 1
                                 self.logger.info(f"Purged expired backup by mtime: {item.name}")
+                    elif item.name.endswith(".tmp") and item.name.startswith(prefix):
+                        try:
+                            item.unlink()
+                            self.logger.info(f"Cleaned up orphaned temporary file from interrupted backup: {item.name}")
+                        except Exception:
+                            pass
         except Exception as e:
             self.logger.warning(f"Error during retention cleanup: {e}")
 
