@@ -9,6 +9,7 @@ Dynamically resolves application version from:
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 DEFAULT_VERSION = "1.0.0"
@@ -45,13 +46,20 @@ def _get_baked_version() -> str | None:
 
 
 def _get_git_version() -> str | None:
-    """Extracts latest version tag from Git."""
+    """Extracts latest version tag from Git (only when running in a git clone)."""
+    if getattr(sys, "frozen", False):
+        return None
+
     repo_dir = Path(__file__).resolve().parent.parent
+    if not (repo_dir / ".git").exists():
+        return None
+
     commands = [
-        ["git", "tag", "--merged", "HEAD", "--sort=-v:refname"],
         ["git", "tag", "-l", "--sort=-v:refname"],
         ["git", "describe", "--tags", "--abbrev=0"],
     ]
+
+    creationflags = 0x08000000 if sys.platform == "win32" else 0  # CREATE_NO_WINDOW
 
     for cmd in commands:
         try:
@@ -59,7 +67,8 @@ def _get_git_version() -> str | None:
                 cmd,
                 cwd=str(repo_dir),
                 stderr=subprocess.DEVNULL,
-                encoding="utf-8"
+                encoding="utf-8",
+                creationflags=creationflags,
             )
             for line in out.splitlines():
                 clean = _clean_version(line)
@@ -89,19 +98,26 @@ def get_version(use_cache: bool = True) -> str:
         _CACHED_VERSION = env_ver
         return _CACHED_VERSION
 
-    # 2. Baked / generated version file (e.g. inside PyInstaller frozen bundle)
-    baked_ver = _get_baked_version()
-    if baked_ver:
-        _CACHED_VERSION = baked_ver
-        return _CACHED_VERSION
+    # 2. Frozen packaged binary: always use the embedded build version
+    if getattr(sys, "frozen", False):
+        baked_ver = _get_baked_version()
+        if baked_ver:
+            _CACHED_VERSION = baked_ver
+            return _CACHED_VERSION
 
-    # 3. Dynamic query from Git release tags (development from source)
+    # 3. Dynamic query from Git release tags (source development)
     git_ver = _get_git_version()
     if git_ver:
         _CACHED_VERSION = git_ver
         return _CACHED_VERSION
 
-    # 4. Fallback default
+    # 4. Baked / generated version file (e.g. if git not installed)
+    baked_ver = _get_baked_version()
+    if baked_ver:
+        _CACHED_VERSION = baked_ver
+        return _CACHED_VERSION
+
+    # 5. Fallback default
     _CACHED_VERSION = DEFAULT_VERSION
     return _CACHED_VERSION
 

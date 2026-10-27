@@ -28,25 +28,26 @@ An automated billing data vault for Windows desktop designed for retail shops, b
   - Windows desktop notifications and optional success/warning chimes.
   - Windows boot autostart option.
 - **GitHub Release Auto-Updater**:
-  - Queries `Omar-VF/AutoBackup` releases via background thread on startup and periodically every 4 hours.
-  - When you tag a new release (e.g. `git tag v1.0.1 && git push origin v1.0.1`), GitHub Actions automatically builds `Tethr-Setup.exe` and publishes the release.
+  - Queries `Omar-VF/Tethr` releases via background thread on startup and periodically every 4 hours.
+  - When you tag a new release (e.g. `git tag v1.0.3 && git push origin v1.0.3`), GitHub Actions automatically builds `Tethr-Setup.exe` and publishes the release.
   - Tethr detects the new release, shows the changelog in an editorial update modal, downloads the installer, and seamlessly upgrades and restarts the app.
 
 ---
 
-## 📦 Windows Setup Installer
+## 📦 Download & Installation
 
-A standalone Windows installer is available in:
-👉 **[`dist/installer/Tethr-Setup.exe`](file:///d:/Projects/AutoBackup/dist/installer/Tethr-Setup.exe)**
+The standalone Windows installer is available on the GitHub Releases page:
+👉 **[Download Tethr for Windows (Latest Release)](https://github.com/Omar-VF/Tethr/releases/latest)**
 
 - Standalone executable (requires no Python or external dependencies on the target PC).
 - Installs to Program Files / User AppData with multi-resolution desktop and Start Menu shortcuts.
-- Includes Windows Add/Remove Programs uninstaller.
+- Includes Windows Add/Remove Programs clean uninstaller.
 
-To rebuild the installer from source at any time:
+To build the installer from source locally:
 ```powershell
 .\build_installer.bat
 ```
+*(The compiled installer will be generated in `dist\installer\Tethr-Setup.exe`)*
 
 ---
 
