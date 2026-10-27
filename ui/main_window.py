@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -28,7 +29,7 @@ from PyQt6.QtWidgets import (
 
 from autobackup import autostart, __version__
 from autobackup.backup_engine import BackupResult
-from autobackup.config import ConfigManager
+from autobackup.config import ConfigManager, format_time_12h, format_datetime_12h
 from autobackup.logger import BackupLogger
 from autobackup.scheduler import BackupScheduler
 from autobackup.updater import UpdateCheckWorker, UpdateInfo
@@ -84,6 +85,7 @@ class MainWindow(QMainWindow):
         self._center_on_screen()
 
         self._first_minimize_notified = False
+        self._is_exiting = False
 
         self._init_ui()
         self._connect_signals()
@@ -328,7 +330,7 @@ class MainWindow(QMainWindow):
         lbl_h_tag = QLabel("HOURS")
         lbl_h_tag.setProperty("role", "summary_tag")
         col_hours.addWidget(lbl_h_tag)
-        self.lbl_sum_hours = QLabel("09:00 – 21:00")
+        self.lbl_sum_hours = QLabel("9:00 AM – 9:00 PM")
         self.lbl_sum_hours.setProperty("role", "summary_val")
         col_hours.addWidget(self.lbl_sum_hours)
         summary_layout.addLayout(col_hours)
@@ -363,10 +365,10 @@ class MainWindow(QMainWindow):
         col_every.addWidget(self.lbl_sum_every)
         summary_layout.addLayout(col_every)
 
-        # Col 4: Keep
+        # Col 4: Delete After
         col_keep = QVBoxLayout()
         col_keep.setSpacing(6)
-        lbl_k_tag = QLabel("KEEP")
+        lbl_k_tag = QLabel("DELETE AFTER")
         lbl_k_tag.setProperty("role", "summary_tag")
         col_keep.addWidget(lbl_k_tag)
         self.lbl_sum_keep = QLabel("30 days")
@@ -725,7 +727,7 @@ class MainWindow(QMainWindow):
         self.tray.settings_requested.connect(self._open_inwindow_settings)
         self.tray.check_updates_requested.connect(lambda: self.check_for_updates(manual=True))
         self.tray.pause_toggled.connect(self._refresh_state)
-        self.tray.exit_requested.connect(QApplication.instance().quit)
+        self.tray.exit_requested.connect(self._exit_app)
 
     # ================= UPDATE MANAGEMENT =================
     def check_for_updates(self, manual: bool = False):
@@ -794,7 +796,7 @@ class MainWindow(QMainWindow):
     @staticmethod
     def _format_time_label(hour: int, minute: int) -> str:
         t = QTime(hour, minute)
-        return t.toString("hh:mm AP")
+        return t.toString("h:mm AP")
 
     def _populate_time_combos(self):
         """Populates Opens and Closes combos with 15-minute intervals across 24 hours."""
@@ -1049,7 +1051,10 @@ class MainWindow(QMainWindow):
         # 5. Summary Card
         st = self.config.get("start_time", "09:00")
         et = self.config.get("end_time", "21:00")
-        self.lbl_sum_hours.setText(f"{st} – {et}")
+        if st == "00:00" and et in ("23:59", "24:00"):
+            self.lbl_sum_hours.setText("12:00 AM – 11:59 PM")
+        else:
+            self.lbl_sum_hours.setText(f"{format_time_12h(st)} – {format_time_12h(et)}")
 
         active_days = set(self.config.get("active_days", [0, 1, 2, 3, 4, 5]))
         for i, pill in enumerate(self.day_pills):
@@ -1084,7 +1089,7 @@ class MainWindow(QMainWindow):
         if last_dt:
             try:
                 dt = datetime.fromisoformat(last_dt)
-                self.lbl_footer_status.setText(f"Last backup: {dt.strftime('%b %d at %H:%M')}")
+                self.lbl_footer_status.setText(f"Last backup: {format_datetime_12h(dt)}")
             except Exception:
                 self.lbl_footer_status.setText("Last backup recorded")
         else:
@@ -1180,13 +1185,67 @@ class MainWindow(QMainWindow):
             return None
 
     def _show_and_raise(self):
+        """Restores window from tray and brings it to foreground."""
         self.show()
         self.setWindowState(self.windowState() & ~Qt.WindowState.WindowMinimized | Qt.WindowState.WindowActive)
         self.raise_()
         self.activateWindow()
 
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                hwnd = int(self.winId())
+                user32 = ctypes.windll.user32
+                user32.ShowWindow(hwnd, 9)
+                user32.SetForegroundWindow(hwnd)
+            except Exception:
+                pass
+
+
+    def _exit_app(self):
+        """Completely, cleanly, and immediately terminates the application from the system tray."""
+        self._is_exiting = True
+
+        # Stop timers
+        if hasattr(self, "master_timer") and self.master_timer.isActive():
+            self.master_timer.stop()
+        if hasattr(self, "update_timer") and self.update_timer.isActive():
+            self.update_timer.stop()
+
+        # Stop update worker if running
+        if hasattr(self, "update_checker") and self.update_checker.isRunning():
+            self.update_checker.terminate()
+            self.update_checker.wait(300)
+
+        # Stop scheduler active worker
+        if hasattr(self, "scheduler") and self.scheduler:
+            if self.scheduler._active_worker and self.scheduler._active_worker.isRunning():
+                self.scheduler._active_worker.cancel()
+                self.scheduler._active_worker.terminate()
+                self.scheduler._active_worker.wait(300)
+
+        # Hide system tray icon immediately so Windows removes it from the taskbar notification area
+        if hasattr(self, "tray") and self.tray:
+            self.tray.hide()
+
+        # Close main window accepting close
+        self.close()
+
+        # Quit Qt application
+        app = QApplication.instance()
+        if app:
+            app.quit()
+
+        # Guarantee complete immediate process termination
+        import os
+        os._exit(0)
+
     def closeEvent(self, event: QCloseEvent):
-        """Minimize to Windows system tray instead of closing."""
+        """Minimize to Windows system tray instead of closing, unless exiting completely."""
+        if getattr(self, "_is_exiting", False):
+            event.accept()
+            return
+
         if not self._first_minimize_notified:
             self.tray.notify(
                 "Tethr Active",
@@ -1195,3 +1254,4 @@ class MainWindow(QMainWindow):
             self._first_minimize_notified = True
         event.ignore()
         self.hide()
+

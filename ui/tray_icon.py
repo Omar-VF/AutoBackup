@@ -96,3 +96,9 @@ class SystemTrayManager(QObject):
             else QSystemTrayIcon.MessageIcon.Information
         )
         self.tray_icon.showMessage(title, message, icon, 5000)
+
+    def hide(self):
+        """Explicitly hides the tray icon so Windows immediately removes it from the taskbar."""
+        if self.tray_icon:
+            self.tray_icon.hide()
+

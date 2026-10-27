@@ -47,6 +47,8 @@ jobs:
 
       - name: Compile Standalone Executable with PyInstaller
         run: pyinstaller tethr.spec --noconfirm
+        env:
+          TETHR_VERSION: ${{ steps.get_version.outputs.VERSION }}
 
       - name: Compile Windows Setup Installer with Inno Setup
         run: |

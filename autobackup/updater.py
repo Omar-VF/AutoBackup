@@ -21,7 +21,7 @@ from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from autobackup import __version__
 
 # Target GitHub Repository
-GITHUB_REPO = "Omar-VF/AutoBackup"
+GITHUB_REPO = "Omar-VF/Tethr"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
 
@@ -123,11 +123,60 @@ class UpdateCheckWorker(QThread):
 
         except urllib.error.HTTPError as e:
             if e.code == 404:
+                # No releases published yet
                 self.no_update_available.emit(self.current_version)
+            elif e.code == 403:
+                # GitHub REST API rate limit reached (60 req/hr on unauthenticated IP)
+                # Seamless fallback to web URL which has no rate limit
+                self._check_web_fallback()
             else:
                 self.check_failed.emit(f"GitHub connection error: HTTP {e.code}")
         except Exception as e:
             self.check_failed.emit(str(e))
+
+    def _check_web_fallback(self):
+        """Fallback check via standard GitHub web release redirect, bypassing REST API rate limits."""
+        web_url = f"https://github.com/{self.repo}/releases/latest"
+        req = urllib.request.Request(
+            web_url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Accept": "text/html,application/xhtml+xml",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                final_url = resp.geturl()
+                match = re.search(r"/releases/tag/([^/?#]+)", final_url)
+                if match:
+                    tag_name = match.group(1)
+                    if is_newer_version(tag_name, self.current_version):
+                        download_url = f"https://github.com/{self.repo}/releases/download/{tag_name}/Tethr-Setup.exe"
+                        info = UpdateInfo(
+                            version=tag_name,
+                            release_name=f"Tethr {tag_name}",
+                            notes="A new version of Tethr is available. Click Update to download and install.",
+                            download_url=download_url,
+                            asset_name="Tethr-Setup.exe",
+                            size_bytes=0,
+                            release_url=final_url,
+                        )
+                        self.update_available.emit(info)
+                        return
+                    else:
+                        self.no_update_available.emit(self.current_version)
+                        return
+
+            self.no_update_available.emit(self.current_version)
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                # No releases published yet on this repository -> current build is up to date
+                self.no_update_available.emit(self.current_version)
+            else:
+                self.check_failed.emit(f"Could not reach GitHub (HTTP {e.code})")
+        except Exception as e:
+            self.check_failed.emit(str(e))
+
 
 
 class UpdateDownloadWorker(QThread):

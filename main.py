@@ -2,7 +2,8 @@ import os
 import sys
 from pathlib import Path
 
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 
 from autobackup.config import ConfigManager
 from autobackup.logger import BackupLogger
@@ -11,29 +12,10 @@ from ui.main_window import MainWindow
 from ui.styles import MODERN_DARK_STYLE
 from ui.tray_icon import SystemTrayManager
 
-
-MUTEX_HANDLE = None
-
-
-def check_single_instance() -> bool:
-    """Uses a Windows kernel mutex to guarantee single instance without memory orphan bugs."""
-    global MUTEX_HANDLE
-    if sys.platform != "win32":
-        return True
-
-    try:
-        import ctypes
-        ERROR_ALREADY_EXISTS = 183
-        kernel32 = ctypes.windll.kernel32
-        MUTEX_HANDLE = kernel32.CreateMutexW(None, False, "Tethr_Named_Mutex_v1")
-        if kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
-            return False
-        return True
-    except Exception:
-        return True
+IPC_SERVER_NAME = "Tethr_App_SingleInstance_v1"
 
 
-def main():
+def main() -> int:
     # Group under app model ID on Windows
     if sys.platform == "win32":
         try:
@@ -47,15 +29,22 @@ def main():
     app.setOrganizationName("Tethr")
     app.setQuitOnLastWindowClosed(False)
 
-    # Single-instance enforcement
-    if not check_single_instance():
-        print("Tethr is already running in your Windows System Tray.")
-        QMessageBox.information(
-            None,
-            "Already Running",
-            "Tethr is already running. Check your Windows System Tray (near the clock).",
-        )
-        sys.exit(0)
+    # 1. Single-instance check via QLocalSocket
+    client_socket = QLocalSocket()
+    client_socket.connectToServer(IPC_SERVER_NAME)
+    if client_socket.waitForConnected(500):
+        # Existing instance is already running: bring it to the foreground
+        client_socket.write(b"SHOW\n")
+        client_socket.waitForBytesWritten(500)
+        client_socket.disconnectFromServer()
+        return 0
+
+    # 2. First instance: start IPC local server to listen for secondary launches
+    QLocalServer.removeServer(IPC_SERVER_NAME)
+    ipc_server = QLocalServer(app)
+    if not ipc_server.listen(IPC_SERVER_NAME):
+        QLocalServer.removeServer(IPC_SERVER_NAME)
+        ipc_server.listen(IPC_SERVER_NAME)
 
     # Load custom fonts
     from PyQt6.QtGui import QFontDatabase, QFont
@@ -80,18 +69,24 @@ def main():
 
     window = MainWindow(config, logger, scheduler, tray)
 
+    # Wire IPC listener to bring window to foreground when desktop shortcut is clicked
+    def _on_ipc_incoming():
+        conn = ipc_server.nextPendingConnection()
+        if conn:
+            window._show_and_raise()
+            conn.disconnectFromServer()
+
+    ipc_server.newConnection.connect(_on_ipc_incoming)
+
     # Check start arguments (e.g. Windows autostart flag)
     is_minimized = "--minimized" in sys.argv or "--tray" in sys.argv
     if not is_minimized:
-        window.show()
-        window.raise_()
-        window.activateWindow()
+        window._show_and_raise()
     else:
         tray.notify("Tethr Active", "Running quietly in the system tray.")
 
-    exit_code = app.exec()
-    sys.exit(exit_code)
+    return app.exec()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

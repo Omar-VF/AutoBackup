@@ -23,10 +23,10 @@ class TestUpdater(unittest.TestCase):
             version="v1.1.0",
             release_name="Tethr v1.1.0 Feature Release",
             notes="* Added GitHub release auto-updater\n* Polished time pickers",
-            download_url="https://github.com/Omar-VF/AutoBackup/releases/download/v1.1.0/Tethr-Setup.exe",
+            download_url="https://github.com/Omar-VF/Tethr/releases/download/v1.1.0/Tethr-Setup.exe",
             asset_name="Tethr-Setup.exe",
             size_bytes=27000000,
-            release_url="https://github.com/Omar-VF/AutoBackup/releases/tag/v1.1.0",
+            release_url="https://github.com/Omar-VF/Tethr/releases/tag/v1.1.0",
         )
         dialog = UpdateDialog(info)
         self.assertIsNotNone(dialog)

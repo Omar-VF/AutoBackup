@@ -3,5 +3,8 @@ Tethr
 Automated billing data backup for Windows desktop.
 """
 
-__version__ = "1.0.0"
+from autobackup.version import get_version
+
+__version__ = get_version()
 __app_name__ = "Tethr"
+
